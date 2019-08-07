@@ -31,27 +31,20 @@
         </div>
         <div id="display-box">
             <ul>
-				<li is="todo-box" v-for="todo in todos" :todo="todo" :key="todo.id" @delete-todo="deleteTodo"></li>
+				<li is="todo-box" v-for="todo in displayTodos" :todo="todo" :key="todo.id" @delete-todo="deleteTodo"></li>
             </ul>
         </div>
         <div id="footer-box">
             <span>{{ incompleteTodos.length }} items left</span>
-            <button @click="displayTarget = DisplayState.all">All</button>
-            <button @click="displayTarget = DisplayState.incomplete">Active</button>
-			<button @click="displayTarget = DisplayState.completed">Completed</button>
+            <button @click="displayTarget = 0">All</button>
+            <button @click="displayTarget = 1">Active</button>
+			<button @click="displayTarget = 2">Completed</button>
 			<button v-if="completedTodos.length !== 0" @click="clearAllCompletedTodos">Clear completed</button>
         </div>
     </div>
 </body>
 
 <script>
-    const DisplayState = {
-		all: 0,
-		incomplete: 1,
-		completed: 2
-	};
-
-
 	Vue.component('todo-box', {
 		data: function () {
 			return {
@@ -90,7 +83,7 @@
         data: function () {
             return {
 				isDebug: false,
-                displayTarget: DisplayState.all,
+                displayTarget: 0,
                 inputText: '',
                 todos: [
                     {
@@ -114,11 +107,11 @@
         },
         computed: {
             displayTodos: function () {
-                if (this.displayTarget === DisplayState.all) {
+                if (this.displayTarget === 0) {
                     return this.todos;
-                } else if (this.displayTarget === DisplayState.incomplete) {
+                } else if (this.displayTarget === 1) {
                     return this.incompleteTodos;
-                } else if (this.displayTarget === DisplayState.completed) {
+                } else if (this.displayTarget === 2) {
                     return this.completedTodos;
                 }
             },
