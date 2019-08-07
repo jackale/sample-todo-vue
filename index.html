@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+<head>
+    <title>Vue Test Todos</title>
+</head>
+<body>
+    <div id="root" v-on:toggle="console.log('hoge')">
+        <div id="debug-message-area">
+            <p>debug {{ debug }}</p>
+            <p>input {{ inputText }}</p>
+        </div>
+
+        <div id="create-box">
+            <input type="text" v-model="inputText" @keydown.enter="onInputKeyUp">
+        </div>
+        <div id="display-box">
+            <ul>
+                <li v-for="todo in displayTodos">{{ todo.content }}</li>
+            </ul>
+        </div>
+        <div id="footer-box">
+            <span>{{ incompleteTodos.length }} items left</span>
+            <button v-on:click="displayTarget = INCOMPLETE">未完了のみ</button>
+        </div>
+    </div>    
+</body>
+
+<script>
+    const INCOMPLETE = 0;
+    const COMPLETE = 1;
+    var vm = new Vue({
+        el: '#root',
+        component: ['todo-display-box'],
+        data: function () {
+            return {
+                displayTarget: 'all',
+                inputText: '',
+                todos: [
+                    {
+                        state: INCOMPLETE,
+                        content: 'hoge',
+                    },
+                    {
+                        state: INCOMPLETE,
+                        content: 'fuga',
+                    },
+                    {
+                        state: INCOMPLETE,
+                        content: 'foo',
+                    }
+                ],
+                debug: ''
+            }
+        },
+        computed: {
+            displayTodos: function () {
+                if (this.displayTarget === 'all') {
+                    return this.todos;
+                } else if (this.displayTarget === INCOMPLETE) {
+                    return this.incompleteTodos;
+                } else if (this.displayTarget === 'complete') {
+                    return this.completedTodos;
+                }
+            },
+            incompleteTodos: function () {
+                return this.todos.filter(todo => todo.state === INCOMPLETE);
+            },
+            completedTodos: function () {
+                return this.todos.filter(todo => todo.state === COMPLETE);
+            }
+        },
+        methods: {
+            onInputKeyUp(e) {
+                // 日本語入力の変換確定のEnterは229で来るのでラップ
+                if (e.keyCode !== 13) return;
+                this.addTodo();
+            },
+            addTodo: function () {
+                const content = this.inputText;
+
+                // バリデーション
+                if (content.length === 0) {
+                    return;
+                }
+
+                // TODO setterを用意すべき?
+                this.todos.push({
+                    state: INCOMPLETE,
+                    content: content
+                });
+            }
+        }
+    });
+
+    Vue.component('todo-display-box', {
+        data: function () {
+            return {};
+        },
+        props: ['todos'],
+        template: `
+        <ul>
+            <li v-for="todo in todos">{{ todo }}</li>
+        </ul>
+        `
+    });
+
+
+</script>
+</html>
