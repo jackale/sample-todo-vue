@@ -1,52 +1,111 @@
 <!DOCTYPE html>
 <html lang="ja">
-<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+<script src="./vue.js"></script>
 <head>
-    <title>Vue Test Todos</title>
+	<title>Vue Test Todos</title>
+	<style>
+		#display-box > ul {
+			list-style: none;
+			padding-left: 0;
+		}
+		.completed {
+			text-decoration: line-through;
+			color: lightslategray;
+		}
+		.delete-todo:hover::after {
+			content: 'x';
+			color: orangered;
+		}
+	</style>
 </head>
 <body>
-    <div id="root" v-on:toggle="console.log('hoge')">
-        <div id="debug-message-area">
+    <div id="root">
+        <div id="debug-message-area" v-if="isDebug">
             <p>debug {{ debug }}</p>
             <p>input {{ inputText }}</p>
         </div>
 
         <div id="create-box">
+			<button @click="selectAll"></button>
             <input type="text" v-model="inputText" @keydown.enter="onInputKeyUp">
         </div>
         <div id="display-box">
             <ul>
-                <li v-for="todo in displayTodos">{{ todo.content }}</li>
+				<li is="todo-box" v-for="todo in todos" :todo="todo" :key="todo.id" @delete-todo="deleteTodo"></li>
             </ul>
         </div>
         <div id="footer-box">
             <span>{{ incompleteTodos.length }} items left</span>
-            <button v-on:click="displayTarget = INCOMPLETE">未完了のみ</button>
+            <button @click="displayTarget = DisplayState.all">All</button>
+            <button @click="displayTarget = DisplayState.incomplete">Active</button>
+			<button @click="displayTarget = DisplayState.completed">Completed</button>
+			<button v-if="completedTodos.length !== 0" @click="clearAllCompletedTodos">Clear completed</button>
         </div>
-    </div>    
+    </div>
 </body>
 
 <script>
-    const INCOMPLETE = 0;
-    const COMPLETE = 1;
+    const DisplayState = {
+		all: 0,
+		incomplete: 1,
+		completed: 2
+	};
+
+
+	Vue.component('todo-box', {
+		data: function () {
+			return {
+				mode: 'normal',
+			};
+		},
+		props: ["todo"],
+		template: `
+		<div>
+			<input type="checkbox" v-model="todo.isCompleted">
+			<div class="todo-area" style="display: inline;" v-if="isNormal" @dblclick="mode = 'edit'">
+				<span :class="{ completed: todo.isCompleted }">{{ todo.content }}</span>
+			</div>
+			<div class="todo-edit-area" style="display: inline;" v-else>
+				<input type="text" @keyup.enter="updateContent" @blur="updateContent" v-model="todo.content">
+			</div>
+			<button class="delete-todo" @click="$emit('delete-todo', todo)"></button>
+		</div>
+		`,
+		computed: {
+			isNormal: function () {
+				return this.mode === 'normal';
+			},
+		},
+		methods: {
+			updateContent: function () {
+				// TODO 日本語入力のときのEnterをhook
+				// TODO 文字が空だと更新できないみたいな検証をhookする(v-modelじゃなくて自前でイベントする)
+				this.mode = 'normal';
+			}
+		}
+	});
+
     var vm = new Vue({
         el: '#root',
-        component: ['todo-display-box'],
         data: function () {
             return {
-                displayTarget: 'all',
+				isDebug: false,
+                displayTarget: DisplayState.all,
                 inputText: '',
                 todos: [
                     {
-                        state: INCOMPLETE,
+						id: 1,
+                        isCompleted: false,
                         content: 'hoge',
                     },
                     {
-                        state: INCOMPLETE,
+						id: 2,
+                        isCompleted: false,
                         content: 'fuga',
                     },
                     {
-                        state: INCOMPLETE,
+						id: 3,
+                        isCompleted: true,
                         content: 'foo',
                     }
                 ],
@@ -55,19 +114,19 @@
         },
         computed: {
             displayTodos: function () {
-                if (this.displayTarget === 'all') {
+                if (this.displayTarget === DisplayState.all) {
                     return this.todos;
-                } else if (this.displayTarget === INCOMPLETE) {
+                } else if (this.displayTarget === DisplayState.incomplete) {
                     return this.incompleteTodos;
-                } else if (this.displayTarget === 'complete') {
+                } else if (this.displayTarget === DisplayState.completed) {
                     return this.completedTodos;
                 }
             },
             incompleteTodos: function () {
-                return this.todos.filter(todo => todo.state === INCOMPLETE);
+                return this.todos.filter(todo => !todo.isCompleted);
             },
             completedTodos: function () {
-                return this.todos.filter(todo => todo.state === COMPLETE);
+                return this.todos.filter(todo => todo.isCompleted);
             }
         },
         methods: {
@@ -86,10 +145,35 @@
 
                 // TODO setterを用意すべき?
                 this.todos.push({
-                    state: INCOMPLETE,
+	                isCompleted: false,
                     content: content
                 });
-            }
+
+				this.inputText = "";
+            },
+			deleteTodo: function (target) {
+				// TODO 対象を正しく選択する
+				this.todos.splice(this.todos.findIndex(todo => todo.content === target.content), 1);
+			},
+			selectAll: function () {
+				// すでに全選択済みなら全解除
+				if (this.todos.length === this.completedTodos.length) {
+					this.todos = this.todos.map(todo => {
+						const updated = todo;
+						updated.isCompleted = false;
+						return updated;
+					});
+				} else {
+					this.todos = this.todos.map(todo => {
+						const updated = todo;
+						updated.isCompleted = true;
+						return updated;
+					});
+				}
+			},
+			clearAllCompletedTodos: function () {
+				this.todos = this.todos.filter(todo => !todo.isCompleted);
+			}
         }
     });
 
@@ -104,7 +188,5 @@
         </ul>
         `
     });
-
-
 </script>
 </html>
